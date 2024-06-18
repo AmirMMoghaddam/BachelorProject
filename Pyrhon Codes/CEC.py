@@ -24,7 +24,7 @@ def add_parity_bits(data, k):
 def EC_with_parity(bits,k):
     p = int(np.ceil(np.sqrt(k)))
     n = (p+1) ** 2
-    if n < len(bits):
+    if n <= len(bits):
       bits = bits[:n]
     else:
       print("Something is Wrong")

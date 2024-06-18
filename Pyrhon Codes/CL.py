@@ -3,7 +3,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import erfc
 from scipy.stats import norm
-
+import CEC
 def encode_MPSK(bits, M):
     # Calculate the number of bits per symbol
     bits_per_symbol = int(np.log2(M))
@@ -35,7 +35,6 @@ def add_awgn_noise(signal, snr_db):
     power_signal = np.mean(np.abs(signal)**2)
     noise_power = power_signal / snr_linear
     noise = np.sqrt(noise_power / 2) * (np.random.randn(len(signal)) + 1j * np.random.randn(len(signal)))
-    print(noise[:10])
     return signal + noise
 def decision_maker(symbols, M):
     # Generate the constellation for M-PSK
@@ -70,3 +69,54 @@ def decode_MPSK(symbols, M):
         bits.extend(mapping[closest_symbol])
     
     return np.array(bits)
+def SendClassicalChannel(SendingList,SNR,M,EC):
+  length = len(SendingList)
+  if EC :
+     Parity_added = CEC.add_parity_bits(convert_to_np_array(SendingList),length)
+  else:
+     Parity_added = convert_to_np_array(SendingList)
+  Encoded_SendingData = encode_MPSK(Parity_added,M)
+  Noisy_Encoded_SendigData = add_awgn_noise(Encoded_SendingData,SNR)
+  Decided_Symbols = decision_maker(Noisy_Encoded_SendigData,M)
+  Received_SendingData = decode_MPSK(Decided_Symbols,M)
+  if EC:
+    RData = convert_from_np_array(CEC.EC_with_parity(Received_SendingData,length),False)
+  else:
+    RData = convert_from_np_array(Received_SendingData,False)
+  return RData
+def convert_to_np_array(data):
+    """
+    Converts a list or string of numbers into a numpy array of integers.
+
+    Parameters:
+    data (list or str): Input list or string of numbers.
+
+    Returns:
+    np.ndarray: Numpy array of integers from the input data.
+    """
+    if isinstance(data, str):
+        data = [int(num) for num in data]
+    elif isinstance(data, list):
+        data = np.array(data, dtype=int)
+    else:
+        raise ValueError("Input must be a list or a string of numbers")
+    return np.array(data, dtype=int)
+
+def convert_from_np_array(np_array, to_string):
+    """
+    Converts a numpy array into a list or a string.
+
+    Parameters:
+    np_array (np.ndarray): Input numpy array.
+    to_string (bool): If True, convert to string; if False, convert to list.
+
+    Returns:
+    list or str: Converted list or string from the numpy array.
+    """
+    if not isinstance(np_array, np.ndarray):
+        raise ValueError("Input must be a numpy array")
+
+    if to_string:
+        return ''.join(map(str, np_array))
+    else:
+        return np_array.tolist()
